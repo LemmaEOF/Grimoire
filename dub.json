@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"LemmaEOF"
+	],
+	"copyright": "Copyright © 2022, LemmaEOF",
+	"dependencies": {
+		"vibe-d": "~>0.9"
+	},
+	"description": "A simple vibe.d server application.",
+	"license": "BSD-3",
+	"name": "grimoire"
+}
