@@ -1,0 +1,13 @@
+doctype html
+html
+    body
+        form(method='post')
+            label Slug
+                input(name="slug", type="text")
+            label Title
+                input(name="title", type="text")
+            label Author
+                input(name="author", type="text")
+            label Contents
+                textarea(name="contents")
+            button(type="submit") Submit

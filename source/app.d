@@ -1,5 +1,8 @@
 import vibe.d;
 import std.string : format;
+import scroll;
+import std.uni;
+import std.stdio;
 
 void main()
 {
@@ -16,7 +19,8 @@ void main()
 	{
 		listener.stopListening();
 	}
-
+	refreshScrolls();
+	deleteMeTempInitStorage();
 	logInfo("Please open http://127.0.0.1:8080/ in your browser.");
 	runApplication();
 }
@@ -30,7 +34,7 @@ struct Story {
 	string[] tags;
 	string[] contentWarnings;
 	uint authorId;
-	string[string] subpages;
+	// string[string] subpages;
 }
 
 struct Author {
@@ -40,26 +44,25 @@ struct Author {
 	string email;
 	string avatarUrl;
 	string bio;
-	string[string] socialLinks;
+	// string[string] socialLinks;
 	//TODO: permissions later
 }
 
-Author findAuthor(string authorHandle)
-{
-	return Author(
+//TODO: DELETE ME LATER! THIS IS TEMPORARY!
+Author[string] authors;
+
+Story[string][string] stories;
+
+void deleteMeTempInitStorage() {
+	authors["exampleauthor"] = Author(
 		0,
 		"ExampleAuthor",
 		"Example Author",
 		"example@example.com",
 		"https://lemmaeof.gay",
-		"This is a sample bio!",
-		null
+		"This is a sample bio!"
 	);
-}
-
-Story findStory(string authorHandle, string storySlug)
-{
-	return Story(
+	stories["exampleauthor"]["example-story"] = Story(
 		"example-story",
 		"Example Story",
 		"An example summary for the example story.",
@@ -67,9 +70,18 @@ Story findStory(string authorHandle, string storySlug)
 		"",
 		[],
 		[],
-		0,
-		null
+		0
 	);
+}
+
+Author findAuthor(string authorHandle)
+{
+	return authors[authorHandle.toLower];
+}
+
+Story findStory(string authorHandle, string storySlug)
+{
+	return stories[authorHandle.toLower][storySlug.toLower];
 }
 
 class GrimoireService
@@ -78,7 +90,7 @@ class GrimoireService
 	@path("/")
 	void getHomepage(HTTPServerRequest req, HTTPServerResponse res)
 	{
-
+		res.writeBody(q{<!DOCTYPE html> <html><body>Temporary home page</body></html>}, "text/html");
 	}
 
 	@path("/@:author")
@@ -92,7 +104,32 @@ class GrimoireService
 	void getStory(HTTPServerRequest req, HTTPServerResponse res)
 	{
 		auto author = findAuthor(req.params["author"]).username;
-		auto title = findStory(req.params["author"], req.params["title"]).title;
-		res.render!("wiki.dt", author, title);
+		Story story = findStory(req.params["author"], req.params["title"]);
+		res.renderScroll(story.storyTemplate, ["author": author, "title": story.title, "contents": story.contents]);
+	}
+
+	@path("/new")
+	@method(HTTPMethod.GET)
+	void getNew(HTTPServerResponse res) {
+		res.render!("new.dt");
+	}
+
+	@path("/new")
+	@method(HTTPMethod.POST)
+	void postNew(string author, string slug, string title, string contents)
+	{
+		auto story = Story(
+			slug,
+			title,
+			"Submitted through a template form, FIXME!",
+			"wiki",
+			contents, //XSS!
+			[],
+			[],
+			findAuthor(author).authorId
+		);
+		
+		stories[author][slug] = story;
+		redirect("/@" ~ author ~ "/" ~ slug);
 	}
 }
